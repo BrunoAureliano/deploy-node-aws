@@ -1,0 +1,30 @@
+<div class="p-5 mb-4 bg-body-tertiary rounded-3">
+      <div class="container-fluid py-5">
+        <h1 class="display-5 fw-bold">Welcome to the Node Blog</h1>
+        <p class="col-md-8 fs-4">On our blog, we use mongodb with mongoose, express and express-handlebars, in addition to nodemon.</p>
+        <a href="/users/register">
+            <button class="btn btn-primary btn-lg mt-2" type="button">Create your account here</button>
+        </a>
+      </div>
+</div>
+
+<hr>
+
+<h2>Recent posts</h2>
+{{#each posts}}
+    <div class="card mt-4">
+        <div class="card-body">
+            <h3>{{title}}</h3>
+            <p>{{description}}</p>   
+            <a href="/post/{{slug}}">
+                <button class="btn btn-success">Read More</button>
+            </a>
+            <hr>  
+            <small>Category: {{category.name}}</small>
+            <br>
+            <small>Creation date: {{date}}</small>    
+        </div>
+    </div>
+{{else}}
+    <h5>No posts!</h5>
+{{/each}}

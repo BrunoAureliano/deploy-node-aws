@@ -23,6 +23,9 @@
     import passport from 'passport'
     import auth from './config/auth.js'
     auth(passport)
+
+    import dotenv from 'dotenv'
+    dotenv.config()
     
 // Configs
     // Session
@@ -60,81 +63,69 @@
         app.set('view engine', 'handlebars')
 
     // Mongoose
-        mongoose.connect('mongodb://localhost/blogapp')
-        .then(() => {
+        try {
+            await mongoose.connect(process.env.MONGO_URI)
             console.log("Connected to Mongo")
-        })
-        .catch((err) => {
+        } catch (err) {
             console.log(`Error when connecting: ${err}`)
-        })
+        }
 
     // Public
         app.use(express.static(path.join(__dirname,'public')))
 
 // Routes
     // Main Route
-        app.get('/', (req, res) => {
-            Post.find().lean().populate('category').sort({date: 'desc'})
-            .then((posts) => {
-                res.render('index', {posts: posts})
-            })
-            .catch((err) => {
+        app.get('/', async (req, res) => {
+            try {
+                const posts = await Post.find().lean().populate('category').sort({ date: 'desc' })
+                res.render('index', { posts: posts })
+            } catch (err) {
                 req.flash('error_msg', 'There was an error listing posts')
-                res.redirect('/404')
-            })
+            }
         })
 
     // Posts Routes
-        app.get('/post/:slug', (req, res) => {
-            Post.findOne({slug: req.params.slug})
-            .then((post) => {
+        app.get('/post/:slug', async (req, res) => {
+            try {
+                const post = await Post.findOne({ slug: req.params.slug })
                 if (post) {
-                    res.render('post/index', {post: post})
+                    res.render('post/index', { post: post })
                 } else {
                     req.flash('error_msg', 'This post doesnt exist!')
                     res.redirect('/')
                 }
-            })
-            .catch((err) => {
+            } catch (err) {
                 req.flash('error_msg', 'There was an internal error!')
                 res.redirect('/')
-            })
+            }
         })
 
     // Category Route
-        app.get('/categories', (req, res) => {
-            Category.find().sort({date: 'desc'})
-            .then((categories) => {
-                res.render('categories/index', {categories: categories})
-            })
-            .catch((err) => {
+        app.get('/categories', async (req, res) => {
+            try {
+                const categories = await Category.find().sort({ date: 'desc' })
+                res.render('categories/index', { categories: categories })
+            } catch (err) {
                 req.flash('error_msg', 'There was an internal error listing categories')
                 res.redirect('/')
-            })
+            }
         })
 
     // Posts by Category Route
-        app.get('/categories/:slug', (req, res) => {
-            Category.findOne({slug: req.params.slug})
-            .then((category) => {
+        app.get('/categories/:slug', async (req, res) => {
+            try {
+                const category = await Category.findOne({ slug: req.params.slug })
                 if (category) {
-                    Post.find({category: category._id})
-                    .then((posts) => {
-                        res.render('categories/posts', {posts: posts, category: category})
-                    })
-                    .catch((err) => {
-                        req.flash('error_msg', 'There was an error listing posts')
-                        res.redirect('/')
-                    })
+                    const posts = await Post.find({ category: category._id })
+                    res.render('categories/posts', { posts: posts, category: category })
                 } else {
                     req.flash('error_msg', 'This category doesnt exist!')
                     res.redirect('/')
                 }
-            })
-            .catch((err) => {
+            } catch (err) {
                 req.flash('error_msg', 'There was an internal error')
                 res.redirect('/')
-            })
+            }
         })
 
     // Error Route

@@ -14,7 +14,7 @@ router.get('/register', (req, res) => {
     res.render('users/register')
 })
 
-router.post('/register', (req, res) => {
+router.post('/register', async (req, res) => {
     let errors = []
 
     if (!req.body.name || typeof req.body.name == undefined || req.body.name == null) {
@@ -34,47 +34,32 @@ router.post('/register', (req, res) => {
     }
 
     if (errors.length > 0) {
-        res.render('users/register', {errors: errors})
-    } else {
-        User.findOne({email: req.body.email})
-        .then((user) => {
-            if (user) {
-                req.flash('error_msg', 'An account with this email already exists')
-                res.redirect('/users/register')
-            } else {
-                const newUser = {
-                    name: req.body.name,
-                    email: req.body.email,
-                    password: req.body.password
-                }
-
-                bcrypt.genSalt(10, (erro, salt) => {
-                    bcrypt.hash(newUser.password, salt, (erro, hash) => {
-                        if (erro) {
-                            req.flash('error_msg', 'There was an error saving the user')
-                            res.redirect('/')
-                        }
-
-                        newUser.password = hash
-
-                        new User(newUser).save()
-                        .then(() => {
-                            req.flash('success_msg', 'User registered successfully')
-                            res.redirect('/')
-                        })
-                        .catch((err) => {
-                            req.flash('error_msg', 'There was an error creating the user. Please try again.')
-                            res.redirect('/users/register')
-                        })
-                    })
-                })
-
+        return res.render('users/register', {errors: errors})
+    }
+    try {
+        const user = await User.findOne({ email: req.body.email })
+        if (user) {
+            req.flash('error_msg', 'An account with this email already exists')
+            res.redirect('/users/register')
+        } else {
+            const newUser = {
+                name: req.body.name,
+                email: req.body.email,
+                password: req.body.password
             }
-        })
-        .catch((err) => {
-            req.flash('error_msg', 'There was an internal error')
+
+            const salt = await bcrypt.genSalt(10)
+            const hash = await bcrypt.hash(newUser.password, salt)       
+
+            newUser.password = hash
+
+            await new User(newUser).save()
+            req.flash('success_msg', 'User registered successfully')
             res.redirect('/')
-        })
+        }
+    } catch (err) {
+        req.flash('error_msg', 'There was an error creating the user. Please try again.')
+        res.redirect('/users/register')
     }
 })
 

@@ -10,36 +10,35 @@ const User = mongoose.model('users')
 
 const Passport = function(passport) {
     
-    passport.use(new localStrategy({usernameField: 'email'}, (email, password, done) => {
-        User.findOne({email: email})
-        .then((user) => {
+    passport.use(new localStrategy({usernameField: 'email'}, async (email, password, done) => {
+        try {
+            const user = await User.findOne({ email: email})
             if (!user) {
-                return done(null, false, {message: 'This account doesnt exist'})
+                return done(null, false, { message: 'This account doesnt exist' })
             }
 
-            bcrypt.compare(password, user.password, (erro, equal) => {
-                if (equal) {
-                    return done(null, user)
-                } else {
-                    return done(null, false, {message: 'Incorrect Password'})
-                }
-            })
-        })
+            const equal = await bcrypt.compare(password, user.password)
+            if (equal) {
+                return done(null, user)
+            } else {
+                return done(null, false, { message: 'Incorrect Password' })
+            }
+        } catch (err) {
+            return done(err)
+        }
     }))
 
     passport.serializeUser((user, done) => {
         done(null, user.id)
     })
 
-    passport.deserializeUser((id, done) => {
-        User.findById(id)  
-        .then((user) => {
+    passport.deserializeUser(async (id, done) => {
+        try {
+            const user = await User.findById(id)
             done(null, user)
-        })
-        .catch((err) => {
+        } catch (err) {
             done(err)
-        })
-        
+        }
     })
 }
 
